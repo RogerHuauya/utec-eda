@@ -16,15 +16,16 @@ public:
     // Constructors
     QuadTree() = default;
 
-    QuadTree(NType xmin, NType ymin, NType xmax, NType ymax, size_t bucketSize)
+    QuadTree(NType xmin, NType ymin, NType xmax, NType ymax,
+             size_t _bucketSize)
             : root(std::make_unique<QuadNode>(
             Rect(Point2D(xmin, ymin), Point2D(xmax, ymax)))) {
-        QuadTree::bucketSize = bucketSize;
+        QuadTree::bucketSize = _bucketSize;
     }
 
-    QuadTree(const Rect &boundary, size_t bucketSize)
+    QuadTree(const Rect &boundary, size_t _bucketSize)
             : root(std::make_unique<QuadNode>(boundary)) {
-        QuadTree::bucketSize = bucketSize;
+        QuadTree::bucketSize = _bucketSize;
     }
 
     QuadTree(NType xmin, NType ymin, NType xmax, NType ymax)
