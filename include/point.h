@@ -1,41 +1,48 @@
 #pragma once
 
-class Point2D{
-    public:
-        Point2D();
-        Point2D(float x, float y);
-        void setX(float x);
-        void setY(float y);
-        float getX();
-        float getY();
-        void print();
+#include "datatype.h"
 
-        Point2D operator+(const Point2D& p){
-            return Point2D(x + p.x, y + p.y);
-        }
-        Point2D operator-(const Point2D& p){
-            return Point2D(x - p.x, y - p.y);
-        }
-        bool operator==(const Point2D& p){
-            return x == p.x && y == p.y;
-        }
-        Point2D operator*(const float& f){
-            return Point2D(x*f, y*f);
-        }
+class Point2D {
+public:
+    Point2D();
 
-        Point2D operator*(const int& f){
-            return Point2D(x*f, y*f);
-        }
+    Point2D(NType x, NType y);
 
-        friend Point2D operator*(const float& f, const Point2D& p){
-            return Point2D(p.x*f, p.y*f);
-        }
+    void setX(NType x);
 
-        friend Point2D operator*(const int& f, const Point2D& p){
-            return Point2D(p.x*f, p.y*f);
-        }
+    void setY(NType y);
 
-    private:
-        float x;
-        float y;
+    NType getX() const;
+
+    NType getY() const;
+
+    NType distance(const Point2D &p) const;
+
+    bool operator==(const Point2D &p) const {
+        return x == p.x && y == p.y;
+    }
+
+    bool operator!=(const Point2D &p) const {
+        return x != p.x || y != p.y;
+    }
+
+    Point2D operator+(const Point2D &p) const {
+        return {x + p.x, y + p.y};
+    }
+
+    Point2D operator-(const Point2D &p) const {
+        return {x - p.x, y - p.y};
+    }
+
+    Point2D operator*(const NType &f) const {
+        return {x * f, y * f};
+    }
+
+    friend Point2D operator*(const NType &f, const Point2D &p) {
+        return {p.x * f, p.y * f};
+    }
+
+private:
+    NType x;
+    NType y;
 };

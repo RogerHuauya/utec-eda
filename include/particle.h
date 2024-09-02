@@ -2,14 +2,20 @@
 
 #include "point.h"
 #include "rect.h"
+#include "datatype.h"
 
 class Particle {
     Point2D position;
     Point2D velocity;
+    static const NType timeStep;
 public:
     Particle();
 
-    Particle(Point2D position, Point2D velocity);
+    Particle(const Point2D &position, const Point2D &velocity);
 
-    void updatePosition(Rect &board);
+    Point2D getPosition() const;
+
+    Point2D getVelocity() const;
+
+    void updatePosition(const Rect &boundary);
 };
