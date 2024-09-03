@@ -35,19 +35,11 @@ public:
     QuadTree(const Rect &boundary)
             : root(std::make_unique<QuadNode>(boundary)) {}
 
-    void insert(const std::vector<std::shared_ptr<Particle>> &particles) {
-        for (const auto &particle: particles) {
-            root->insert(particle);
-        }
-    }
+    void insert(const std::vector<std::shared_ptr<Particle>> &particles);
 
-    std::vector<Point2D> knn(const Point2D &queryPoint, size_t k) {
-        return std::vector<Point2D>();
-    }
+    std::vector<Point2D> knn(const Point2D &queryPoint, size_t k);
 
     const std::unique_ptr<QuadNode> &getRoot() const { return root; }
 
-    void updateTree() {
-        root->updateNode();
-    }
+    void updateTree();
 };

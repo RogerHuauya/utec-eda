@@ -28,7 +28,7 @@ public:
             : boundary(Point2D(xmin, ymin), Point2D(xmax, ymax)),
               parent(parent), _isLeaf(true) {}
 
-    QuadNode(const Rect &boundary, QuadNode *parent = nullptr)
+    explicit QuadNode(const Rect &boundary, QuadNode *parent = nullptr)
             : boundary(boundary), parent(parent), _isLeaf(true) {}
 
     bool insert(const std::shared_ptr<Particle> &particle);
@@ -50,7 +50,7 @@ public:
     const QuadNode *getParent() const { return parent; }
 
     // Setters
-    void setParent(QuadNode *parent) { this->parent = parent; }
+    void setParent(QuadNode *_parent) { this->parent = _parent; }
 
     bool isLeaf() const { return _isLeaf; }
 };
