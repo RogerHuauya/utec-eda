@@ -1,26 +1,32 @@
 #pragma once
 
 #include "particle.h"
+
 #include <vector>
 
 
 class QuadNode {
 private:
-    std::vector<std::shared_ptr<Particle>> particles;
+    std::vector<std::shared_ptr<Particle>> particles; // Bucket size constraint
     std::array<std::unique_ptr<QuadNode>, 4> children; // NW, NE, SW, SE
     Rect boundary;
     QuadNode *parent;
     bool _isLeaf;
 
     void addToBucket(const std::shared_ptr<Particle> &particle);
+    // psuh into particales after propagate
 
     bool propagate(const std::shared_ptr<Particle> &particle);
+    // after subdive, send to children
 
     void subdivide();
+    // paritr en 4 cuando el bucket hace overflow
 
-    void relocateParticle(const std::shared_ptr<Particle> &particle);
+    void relocateParticle(const std::shared_ptr<Particle> &particle); // cuando se mueve la particula
+    // particula puede cambiar de casilla/cudrarnte
 
     void removeEmptyNode(QuadNode *emptyChild);
+    // si en el momiviento de las particules, una region se queda vacio, debo marcar nulptt
 
 public:
     QuadNode(NType xmin, NType ymin, NType xmax, NType ymax,
@@ -33,7 +39,7 @@ public:
 
     bool insert(const std::shared_ptr<Particle> &particle);
 
-    void updateNode();
+    void updateNode(); // dado un nnode, actualiza all y manda donde debe estar
 
     // Getters
     const std::vector<std::shared_ptr<Particle>> &

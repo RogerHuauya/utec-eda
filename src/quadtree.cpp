@@ -10,7 +10,7 @@ QuadTree::insert(const std::vector<std::shared_ptr<Particle>> &particles) {
 }
 
 std::vector<Point2D> QuadTree::knn(const Point2D &queryPoint, size_t k) {
-    return root->knn(queryPoint, k);
+    //return root->knn(queryPoint, k);
 }
 
 void QuadTree::updateTree() {
