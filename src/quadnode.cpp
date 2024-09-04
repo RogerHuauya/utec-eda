@@ -15,7 +15,7 @@ bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
      * If the bucket is not full, simply add the particle and return true.
      */
     if (particles.size() < QuadTree::bucketSize) {
-        particles.push_back(particle);
+        addToBucket(particle);
         return true;
     }
 
@@ -87,16 +87,20 @@ void QuadNode::subdivide() {
      * Create the rect regions for the four children.
      * Each child node is initialized with a new rect.
      */
-    children[0] = std::make_unique<QuadNode>(Rect(Point2D(xmin, ymin), Point2D(xmid, ymid)));
-    children[1] = std::make_unique<QuadNode>(Rect(Point2D(xmid, ymin), Point2D(xmax, ymid)));
-    children[2] = std::make_unique<QuadNode>(Rect(Point2D(xmin, ymid), Point2D(xmid, ymax)));
-    children[3] = std::make_unique<QuadNode>(Rect(Point2D(xmid, ymid), Point2D(xmax, ymax)));
+    children[0] = std::make_unique<QuadNode>(
+            Rect(Point2D(xmin, ymin), Point2D(xmid, ymid)), this);
+    children[1] = std::make_unique<QuadNode>(
+            Rect(Point2D(xmid, ymin), Point2D(xmax, ymid)), this);
+    children[2] = std::make_unique<QuadNode>(
+            Rect(Point2D(xmin, ymid), Point2D(xmid, ymax)), this);
+    children[3] = std::make_unique<QuadNode>(
+            Rect(Point2D(xmid, ymid), Point2D(xmax, ymax)), this);
 
     /**
      * Reassign particles to the appropriate child node.
      * After reassigning, clear the particle list in the current node.
      */
-    for (const auto &particle : particles) {
+    for (const auto &particle: particles) {
         propagate(particle);
     }
 
@@ -135,7 +139,7 @@ void QuadNode::removeEmptyNode(QuadNode *emptyChild) {
      * It searches for the empty child, resets the corresponding pointer,
      * and optionally checks if all children are empty to collapse the node.
      */
-    for (auto &child : children) {
+    for (auto &child: children) {
         if (child.get() == emptyChild) {
             child.reset();  // Set the child pointer to nullptr
             break;
@@ -147,10 +151,11 @@ void QuadNode::removeEmptyNode(QuadNode *emptyChild) {
      * If all children are empty, revert the current node back to a leaf node.
      * Instead of using fill, manually reset each child to nullptr.
      */
-    bool allEmpty = std::all_of(children.begin(), children.end(), [](const auto &child) { return !child; });
+    bool allEmpty = std::all_of(children.begin(), children.end(),
+                                [](const auto &child) { return !child; });
     if (allEmpty) {
         _isLeaf = true;  // Revert back to a leaf node
-        for (auto &child : children) {
+        for (auto &child: children) {
             child.reset();  // Clear each child
         }
     }

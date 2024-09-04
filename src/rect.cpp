@@ -25,10 +25,9 @@ bool Rect::contains(const Point2D &p) const {
 }
 
 bool Rect::intersects(const Rect &rect) const {
-    return pmin.getX() <= rect.pmax.getX() &&
-           pmax.getX() >= rect.pmin.getX() &&
-           pmin.getY() <= rect.pmax.getY() &&
-           pmax.getY() >= rect.pmin.getY();
+    return pmin.getX() < rect.pmax.getX() &&
+           pmax.getX() > rect.pmin.getX() &&
+           pmin.getY() < rect.pmax.getY() && pmax.getY() > rect.pmin.getY();
 }
 
 bool Rect::isWithin(const Rect &rect) const {

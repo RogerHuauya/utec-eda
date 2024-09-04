@@ -2,6 +2,8 @@
 
 #include "datatype.h"
 
+class Rect;
+
 class Point2D {
 public:
     Point2D();
@@ -42,7 +44,13 @@ public:
         return {p.x * f, p.y * f};
     }
 
+    friend std::ostream &operator<<(std::ostream &os, const Point2D &p);
+
 private:
     NType x;
     NType y;
 };
+
+NType squaredDistance(const Point2D &a, const Point2D &b);
+
+NType minDistToRect(const Point2D &p, const Rect &rect);

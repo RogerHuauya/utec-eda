@@ -1,3 +1,4 @@
+#include <iostream>
 #include "particle.h"
 
 const NType Particle::timeStep = 1.5;
@@ -68,4 +69,9 @@ Point2D Particle::getPosition() const {
 
 Point2D Particle::getVelocity() const {
     return velocity;
+}
+
+std::ostream &operator<<(std::ostream &os, const Particle &particle) {
+    os << "Particle: " << particle.position << " " << particle.velocity;
+    return os;
 }

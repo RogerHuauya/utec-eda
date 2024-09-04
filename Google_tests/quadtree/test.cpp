@@ -209,12 +209,18 @@ bool verifyParticlesInCorrectLeaf(QuadNode *rootNode) {
 }
 
 
-bool verifyKNN(QuadTree& tree, const std::vector<std::shared_ptr<Particle>>& particles, const Rect& boundary) {
+bool verifyKNN(QuadTree &tree,
+               const std::vector<std::shared_ptr<Particle>> &particles,
+               const Rect &boundary) {
     // Generar un punto de consulta aleatorio dentro del boundary
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> posDistX(boundary.getPmin().getX().getValue(), boundary.getPmax().getX().getValue());
-    std::uniform_real_distribution<float> posDistY(boundary.getPmin().getY().getValue(), boundary.getPmax().getY().getValue());
+    std::uniform_real_distribution<float> posDistX(
+            boundary.getPmin().getX().getValue(),
+            boundary.getPmax().getX().getValue());
+    std::uniform_real_distribution<float> posDistY(
+            boundary.getPmin().getY().getValue(),
+            boundary.getPmax().getY().getValue());
 
     NType queryX = NType(posDistX(gen));
     NType queryY = NType(posDistY(gen));
@@ -228,10 +234,31 @@ bool verifyKNN(QuadTree& tree, const std::vector<std::shared_ptr<Particle>>& par
 
     // Obtener k-NN usando fuerza bruta
     std::vector<std::shared_ptr<Particle>> knnBruteForce = particles;
-    std::sort(knnBruteForce.begin(), knnBruteForce.end(), [&queryPoint](const std::shared_ptr<Particle>& a, const std::shared_ptr<Particle>& b) {
-        return queryPoint.distance(a->getPosition()) < queryPoint.distance(b->getPosition());
-    });
+    std::sort(knnBruteForce.begin(), knnBruteForce.end(),
+              [&queryPoint](const std::shared_ptr<Particle> &a,
+                            const std::shared_ptr<Particle> &b) {
+                  return queryPoint.distance(a->getPosition()) <
+                         queryPoint.distance(b->getPosition());
+              });
     knnBruteForce.resize(k); // Seleccionar los primeros k vecinos más cercanos
+
+    // print query point
+    std::cout << "Query Point: " << queryPoint << std::endl;
+
+
+    for (const auto &particle: knnTree) {
+        std::cout << "Tree: " << particle->getPosition()
+                  << squaredDistance(queryPoint, particle->getPosition())
+                  << " Distance: "
+                  << std::endl;
+    }
+
+    for (const auto &particle: knnBruteForce) {
+        std::cout << "Brute: " << particle->getPosition()
+                  << squaredDistance(queryPoint, particle->getPosition())
+                  << " Distance: "
+                  << std::endl;
+    }
 
     // Verificar si ambos resultados son equivalentes y en el mismo orden
     if (knnTree.size() != knnBruteForce.size()) {

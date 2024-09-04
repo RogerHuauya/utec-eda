@@ -18,4 +18,8 @@ public:
     Point2D getVelocity() const;
 
     void updatePosition(const Rect &boundary);
+
+    friend std::ostream &
+    operator<<(std::ostream &os, const Particle &particle);
+
 };

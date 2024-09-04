@@ -190,3 +190,4 @@ Safe<T> max(const Safe<T> &a, const Safe<T> &b) {
 }
 
 using NType = Safe<float>;
+
