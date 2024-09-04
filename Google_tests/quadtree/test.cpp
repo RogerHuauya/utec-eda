@@ -242,24 +242,6 @@ bool verifyKNN(QuadTree &tree,
               });
     knnBruteForce.resize(k); // Seleccionar los primeros k vecinos más cercanos
 
-    // print query point
-    std::cout << "Query Point: " << queryPoint << std::endl;
-
-
-    for (const auto &particle: knnTree) {
-        std::cout << "Tree: " << particle->getPosition()
-                  << squaredDistance(queryPoint, particle->getPosition())
-                  << " Distance: "
-                  << std::endl;
-    }
-
-    for (const auto &particle: knnBruteForce) {
-        std::cout << "Brute: " << particle->getPosition()
-                  << squaredDistance(queryPoint, particle->getPosition())
-                  << " Distance: "
-                  << std::endl;
-    }
-
     // Verificar si ambos resultados son equivalentes y en el mismo orden
     if (knnTree.size() != knnBruteForce.size()) {
         return false;

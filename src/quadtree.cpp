@@ -1,6 +1,6 @@
 #include <queue>
 #include <cmath>
-
+#include <iostream>
 #include "quadtree.h"
 
 size_t QuadTree::bucketSize = 6;
@@ -13,78 +13,72 @@ QuadTree::insert(const std::vector<std::shared_ptr<Particle>> &particles) {
     }
 }
 
+
 std::vector<std::shared_ptr<Particle>>
 QuadTree::knn(const Point2D &queryPoint, size_t k) {
-    /** This function returns the k-nearest neighbors to the query point.
-     * The implementation uses the technique best first search by
-     * using a priority queue to store the nodes to be visited.
-     */
-    struct QueueEntry {
-        QuadNode *node;
-        NType distance;
-
-        bool operator<(const QueueEntry &other) const {
-            return distance > other.distance;  // Min-heap based on distance
-        }
+    // Priority queue for best-first search: stores nodes or particles with distances
+    using PQElement = std::pair<NType, std::shared_ptr<Particle>>;
+    auto compareParticles = [](const PQElement &a, const PQElement &b) {
+        return a.first <
+               b.first;  // Max heap, we want to keep the farthest in the top
     };
+    std::priority_queue<PQElement, std::vector<PQElement>, decltype(compareParticles)> pq(
+            compareParticles);
 
-    std::priority_queue<QueueEntry> queue;
-    std::priority_queue<NType> bestDistances; // Max-heap to keep track of the k-nearest distances
-    std::vector<std::shared_ptr<Particle>> nearestNeighbors;
+    // Priority queue for best-first search of nodes
+    using SearchNode = std::pair<NType, QuadNode *>;
+    auto compareNodes = [](const SearchNode &a, const SearchNode &b) {
+        return a.first > b.first;  // Min heap, closer nodes should come first
+    };
+    std::priority_queue<SearchNode, std::vector<SearchNode>, decltype(compareNodes)> searchQueue(
+            compareNodes);
 
-    if (!root) {
-        return nearestNeighbors;  // Return an empty vector if the root is null
-    }
+    // Start the search with the root node
+    searchQueue.emplace(0.0, root.get());
+    while (!searchQueue.empty()) {
+        // Get the node with the smallest distance
+        auto [nodeDist, currentNode] = searchQueue.top();
+        searchQueue.pop();
 
-    queue.push({root.get(), minDistToRect(queryPoint, root->getBoundary())});
+        if (!currentNode) continue;  // Skip null nodes
 
-    while (!queue.empty()) {
-        auto current = queue.top();
-        queue.pop();
-
-        if (current.node->isLeaf()) {
-            // For leaf nodes, check all particles
-            for (const auto &particle: current.node->getParticles()) {
-                NType dist = squaredDistance(queryPoint,
-                                             particle->getPosition());
-                if (bestDistances.size() < k || dist < bestDistances.top()) {
-                    if (bestDistances.size() == k) {
-                        bestDistances.pop();
-                    }
-                    bestDistances.push(dist);
-                    nearestNeighbors.push_back(particle);
+        // If it's a leaf node, iterate over the particles
+        if (currentNode->isLeaf()) {
+            for (const auto &particle: currentNode->getParticles()) {
+                NType dist = queryPoint.distance(particle->getPosition());
+                if (pq.size() < k) {
+                    // Add to queue if we haven't found k neighbors yet
+                    pq.emplace(dist, particle);
+                } else if (dist < pq.top().first) {
+                    // If current particle is closer than the farthest one in the queue, replace it
+                    pq.pop();
+                    pq.emplace(dist, particle);
                 }
             }
         } else {
-            // For non-leaf nodes, add all children to the queue
-            for (const auto &child: current.node->getChildren()) {
+            // Otherwise, propagate the search to child nodes
+            for (const auto &child: currentNode->getChildren()) {
                 if (child) {
-                    NType dist = minDistToRect(queryPoint,
-                                               child->getBoundary());
-                    if (bestDistances.size() < k ||
-                        dist < bestDistances.top()) {
-                        queue.push({child.get(), dist});
-                    }
+                    NType childDist = minDistToRect(queryPoint,
+                                                    child->getBoundary());
+                    searchQueue.emplace(childDist, child.get());
                 }
             }
         }
     }
 
-    // Trim the neighbors list to size k (in case there are more than k)
-    if (nearestNeighbors.size() > k) {
-        std::nth_element(nearestNeighbors.begin(),
-                         nearestNeighbors.begin() + k, nearestNeighbors.end(),
-                         [&](const std::shared_ptr<Particle> &a,
-                             const std::shared_ptr<Particle> &b) {
-                             return squaredDistance(queryPoint,
-                                                    a->getPosition()) <
-                                    squaredDistance(queryPoint,
-                                                    b->getPosition());
-                         });
-        nearestNeighbors.resize(k);
+
+    // Collect the k nearest particles from the priority queue
+    std::vector<std::shared_ptr<Particle>> result;
+    while (!pq.empty()) {
+        result.push_back(pq.top().second);
+        pq.pop();
     }
 
-    return nearestNeighbors;
+    // Reverse the result to get them in increasing order of distance
+    std::reverse(result.begin(), result.end());
+
+    return result;
 }
 
 void QuadTree::updateTree() {

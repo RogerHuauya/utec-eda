@@ -51,6 +51,6 @@ private:
     NType y;
 };
 
-NType squaredDistance(const Point2D &a, const Point2D &b);
+NType distance(const Point2D &a, const Point2D &b);
 
 NType minDistToRect(const Point2D &p, const Rect &rect);

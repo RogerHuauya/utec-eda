@@ -38,10 +38,10 @@ std::ostream &operator<<(std::ostream &os, const Point2D &p) {
     return os;
 }
 
-NType squaredDistance(const Point2D &a, const Point2D &b) {
+NType distance(const Point2D &a, const Point2D &b) {
     NType dx = a.getX() - b.getX();
     NType dy = a.getY() - b.getY();
-    return dx * dx + dy * dy;
+    return sqrt(dx * dx + dy * dy);
 }
 
 // Helper function to calculate the minimum distance from a point to a rectangle
@@ -52,5 +52,5 @@ NType minDistToRect(const Point2D &p, const Rect &rect) {
     NType dy = std::max(rect.getPmin().getY() - p.getY(), NType(0));
     dy = std::max(dy, p.getY() - rect.getPmax().getY());
 
-    return dx * dx + dy * dy;
+    return sqrt(dx * dx + dy * dy);
 }

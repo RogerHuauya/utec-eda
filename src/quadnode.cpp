@@ -1,5 +1,6 @@
 #include "quadnode.h"
 #include "quadtree.h"
+#include <iostream>
 
 bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
     /**
@@ -14,24 +15,22 @@ bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
      * If there is space in the current node's bucket, add the particle.
      * If the bucket is not full, simply add the particle and return true.
      */
-    if (particles.size() < QuadTree::bucketSize) {
-        addToBucket(particle);
-        return true;
-    }
-
-    /**
-     * If the node is a leaf and there's no space, subdivide the node.
-     * Subdivision will create four children nodes.
-     */
     if (_isLeaf) {
+        if (particles.size() < QuadTree::bucketSize) {
+            addToBucket(particle);
+            return true;
+        }
         subdivide();
+        return propagate(particle);
+    } else {
+
+        return propagate(particle);
     }
 
     /**
      * Propagate the particle to the appropriate child node.
      * The particle is attempted to be inserted into one of the children.
      */
-    return propagate(particle);
 }
 
 void QuadNode::updateNode() {
