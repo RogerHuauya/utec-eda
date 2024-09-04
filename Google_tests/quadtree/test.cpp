@@ -67,6 +67,13 @@ bool verifyAllDataIndexed(QuadNode *rootNode,
                           const std::set<std::shared_ptr<Particle>> &insertedParticles) {
     std::set<std::shared_ptr<Particle>> foundParticles;
     traverseTree(rootNode, foundParticles);
+
+    for (const auto &particle: insertedParticles) {
+        if (foundParticles.find(particle) == foundParticles.end()) {
+            std::cout << "Missing particle: " << particle->getPosition()
+                      << std::endl;
+        }
+    }
     return foundParticles == insertedParticles;
 }
 
@@ -255,6 +262,12 @@ bool verifyKNN(QuadTree &tree,
     return true;
 }
 
+void updateParticles(const Rect &boundary,
+                     std::vector<std::shared_ptr<Particle>> &particles) {
+    for (auto &particle: particles) {
+        particle->updatePosition(boundary);
+    }
+}
 
 class QuadTreeTest : public ::testing::Test {
 protected:
@@ -304,6 +317,64 @@ TEST_F(QuadTreeTest, ParticlesInCorrectLeaf) {
 }
 
 TEST_F(QuadTreeTest, KnnSearch) {
+    EXPECT_TRUE(verifyKNN(tree, particles, boundary));
+}
+
+class QuadTreeUpdatedTest : public ::testing::Test {
+protected:
+    Rect boundary;
+    QuadTree tree;
+    std::vector<std::shared_ptr<Particle>> particles;
+
+    void SetUp() override {
+        boundary = Rect(Point2D(0, 0), Point2D(100, 100));
+        tree = QuadTree(boundary);
+        int numParticles = 200000;
+        NType maxVelocity = 5.0;
+        particles = generateRandomParticles(numParticles, boundary,
+                                            maxVelocity);
+        tree.insert(particles);
+
+        updateParticles(boundary, particles);
+
+        //for (const auto &particle: particles) {
+        //    std::cout << particle->getPosition() << std::endl;
+        //}
+        tree.updateTree();
+    }
+};
+
+TEST_F(QuadTreeUpdatedTest, AllDataIndexed) {
+    EXPECT_TRUE(verifyAllDataIndexed(tree.getRoot().get(),
+                                     {particles.begin(), particles.end()}));
+}
+
+TEST_F(QuadTreeUpdatedTest, InternalNodesNotLeaf) {
+    EXPECT_TRUE(verifyInternalNodesNotLeaf(tree.getRoot().get()));
+}
+
+TEST_F(QuadTreeUpdatedTest, LeafNodesHaveNoChildren) {
+    EXPECT_TRUE(verifyLeafNodesHaveNoChildren(tree.getRoot().get()));
+}
+
+TEST_F(QuadTreeUpdatedTest, LeafNodesBucketSize) {
+    EXPECT_TRUE(verifyLeafNodesBucketSize(tree.getRoot().get(),
+                                          QuadTree::bucketSize));
+}
+
+TEST_F(QuadTreeUpdatedTest, ChildBoundariesWithinParent) {
+    EXPECT_TRUE(verifyChildBoundariesWithinParent(tree.getRoot().get()));
+}
+
+TEST_F(QuadTreeUpdatedTest, NoIntersectingChildBoundaries) {
+    EXPECT_TRUE(verifyNoIntersectingChildBoundaries(tree.getRoot().get()));
+}
+
+TEST_F(QuadTreeUpdatedTest, ParticlesInCorrectLeaf) {
+    EXPECT_TRUE(verifyParticlesInCorrectLeaf(tree.getRoot().get()));
+}
+
+TEST_F(QuadTreeUpdatedTest, KnnSearch) {
     EXPECT_TRUE(verifyKNN(tree, particles, boundary));
 }
 

@@ -1,6 +1,9 @@
 #include "quadnode.h"
 #include "quadtree.h"
 #include <iostream>
+#include <set>
+#include <vector>
+
 
 bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
     /**
@@ -23,7 +26,6 @@ bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
         subdivide();
         return propagate(particle);
     } else {
-
         return propagate(particle);
     }
 
@@ -33,12 +35,35 @@ bool QuadNode::insert(const std::shared_ptr<Particle> &particle) {
      */
 }
 
+
 void QuadNode::updateNode() {
     /**
      * This function would typically be used to update the state of the node,
      * such as recalculating bounds or updating particle positions.
      * The implementation is dependent on specific needs.
      */
+    if (_isLeaf) {
+        std::vector<std::shared_ptr<Particle>> particlesToRelocate;
+        std::vector<std::shared_ptr<Particle>> particlesToStay;
+        for (const auto &particle: particles) {
+            if (!boundary.contains(particle->getPosition())) {
+                particlesToRelocate.push_back(particle);
+            } else {
+                particlesToStay.push_back(particle);
+            }
+        }
+        particles = particlesToStay;
+        for (const auto &particle: particlesToRelocate) {
+            relocateParticle(particle);
+        }
+
+    } else {
+        for (auto &child: children) {
+            if (child) {
+                child->updateNode();
+            }
+        }
+    }
 }
 
 void QuadNode::addToBucket(const std::shared_ptr<Particle> &particle) {
@@ -100,7 +125,7 @@ void QuadNode::subdivide() {
      * After reassigning, clear the particle list in the current node.
      */
     for (const auto &particle: particles) {
-        propagate(particle);
+        relocateParticle(particle);
     }
 
     // Clear particles from the current node after reassignment
@@ -112,50 +137,29 @@ void QuadNode::relocateParticle(const std::shared_ptr<Particle> &particle) {
      * If a particle has moved, this function should find its new location
      * and move it to the correct node.
      * It first removes the particle from the current node,
-     * and then attempts to insert it into the appropriate node.
+     * and then attempts to insert it into the appropriate node by scaling up the tree.
+     * Then, it propagates the particle to the correct node.
      */
 
-    // Remove the particle from the current node
-    auto it = std::remove(particles.begin(), particles.end(), particle);
-    if (it != particles.end()) {
-        particles.erase(it, particles.end());
-
-        /**
-         * Insert the particle into the correct node.
-         * If the insertion fails, handle it accordingly,
-         * potentially by moving it to the root or discarding it.
-         */
-        if (!insert(particle)) {
-            // If the insertion fails, handle it (e.g., out of bounds)
-        }
-    }
+    auto current = this;
+    while (!current->boundary.contains(particle->getPosition()))
+        current = current->parent;
+    current->propagate(particle);
 }
 
 void QuadNode::removeEmptyNode(QuadNode *emptyChild) {
     /**
-     * This function removes a child node if it becomes empty
-     * after particles have moved away.
-     * It searches for the empty child, resets the corresponding pointer,
-     * and optionally checks if all children are empty to collapse the node.
+     * This function removes an empty child node from the current node.
+     * It is called after a particle has been relocated to another node.
+     * The empty child node is removed from the children array.
      */
-    for (auto &child: children) {
-        if (child.get() == emptyChild) {
-            child.reset();  // Set the child pointer to nullptr
-            break;
-        }
-    }
 
-    /**
-     * Optional: Check if all children are empty and collapse the node.
-     * If all children are empty, revert the current node back to a leaf node.
-     * Instead of using fill, manually reset each child to nullptr.
-     */
-    bool allEmpty = std::all_of(children.begin(), children.end(),
-                                [](const auto &child) { return !child; });
-    if (allEmpty) {
-        _isLeaf = true;  // Revert back to a leaf node
-        for (auto &child: children) {
-            child.reset();  // Clear each child
+    // Find the empty child node in the children array
+    for (auto &i: children) {
+        if (i.get() == emptyChild) {
+            // Remove the empty child node
+            i.reset();
+            return;
         }
     }
 }

@@ -44,7 +44,6 @@ NType distance(const Point2D &a, const Point2D &b) {
     return sqrt(dx * dx + dy * dy);
 }
 
-// Helper function to calculate the minimum distance from a point to a rectangle
 NType minDistToRect(const Point2D &p, const Rect &rect) {
     NType dx = std::max(rect.getPmin().getX() - p.getX(), NType(0));
     dx = std::max(dx, p.getX() - rect.getPmax().getX());

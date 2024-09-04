@@ -3,7 +3,10 @@
 #include "particle.h"
 
 #include <vector>
-
+#include <iostream>
+#include <set>
+#include <random>
+#include <vector>
 
 class QuadNode {
 private:
@@ -14,19 +17,15 @@ private:
     bool _isLeaf;
 
     void addToBucket(const std::shared_ptr<Particle> &particle);
-    // psuh into particales after propagate
 
     bool propagate(const std::shared_ptr<Particle> &particle);
-    // after subdive, send to children
 
     void subdivide();
-    // paritr en 4 cuando el bucket hace overflow
 
-    void relocateParticle(const std::shared_ptr<Particle> &particle); // cuando se mueve la particula
-    // particula puede cambiar de casilla/cudrarnte
+    void relocateParticle(
+            const std::shared_ptr<Particle> &particle); // cuando se mueve la particula
 
     void removeEmptyNode(QuadNode *emptyChild);
-    // si en el momiviento de las particules, una region se queda vacio, debo marcar nulptt
 
 public:
     QuadNode(NType xmin, NType ymin, NType xmax, NType ymax,
@@ -38,8 +37,8 @@ public:
             : boundary(boundary), parent(parent), _isLeaf(true) {}
 
     bool insert(const std::shared_ptr<Particle> &particle);
-
-    void updateNode(); // dado un nnode, actualiza all y manda donde debe estar
+    
+    void updateNode();
 
     // Getters
     const std::vector<std::shared_ptr<Particle>> &
