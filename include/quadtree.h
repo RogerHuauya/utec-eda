@@ -37,7 +37,7 @@ public:
 
     void insert(const std::vector<std::shared_ptr<Particle>> &particles);
 
-    std::vector<Point2D> knn(const Point2D &queryPoint, size_t k);
+    std::vector<std::shared_ptr<Particle>> knn(const Point2D &queryPoint, size_t k);
     // best first search cola prioridad base de datos 2. crear funcion mbr, iterate intarlly, solo las hojas
     // tienen puntos mindist de un punto a un rectangulo
 

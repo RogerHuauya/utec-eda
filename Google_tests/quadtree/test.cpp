@@ -208,43 +208,45 @@ bool verifyParticlesInCorrectLeaf(QuadNode *rootNode) {
     return traverseAndCheckParticlesInCorrectLeaf(rootNode);
 }
 
-/*
-bool verifyKnnSearch(QuadTree& tree, const std::vector<std::shared_ptr<Particle>>& particles, const Rect& boundary) {
+
+bool verifyKNN(QuadTree& tree, const std::vector<std::shared_ptr<Particle>>& particles, const Rect& boundary) {
+    // Generar un punto de consulta aleatorio dentro del boundary
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> posDistX(boundary.getPmin().getX().getValue(), boundary.getPmax().getX().getValue());
     std::uniform_real_distribution<float> posDistY(boundary.getPmin().getY().getValue(), boundary.getPmax().getY().getValue());
-    std::uniform_int_distribution<int> kDist(1, 10);
 
-    for (int i = 0; i < 10; ++i) {
-        Point2D queryPoint(NType(posDistX(gen)), NType(posDistY(gen)));
-        int k = kDist(gen);
+    NType queryX = NType(posDistX(gen));
+    NType queryY = NType(posDistY(gen));
+    Point2D queryPoint(queryX, queryY);
 
-        auto knnResult = tree.knn(queryPoint, k);
-        std::vector<std::shared_ptr<Particle>> bruteForceResult = particles;
+    // Elegir un k aleatorio
+    size_t k = std::uniform_int_distribution<size_t>(1, 10)(gen);
 
-        std::partial_sort(
-            bruteForceResult.begin(),
-            bruteForceResult.begin() + k,
-            bruteForceResult.end(),
-            [&queryPoint](const std::shared_ptr<Particle>& a, const std::shared_ptr<Particle>& b) {
-                return queryPoint.distance(a->getPosition()) < queryPoint.distance(b->getPosition());
-            }
-        );
+    // Obtener k-NN usando QuadTree
+    std::vector<std::shared_ptr<Particle>> knnTree = tree.knn(queryPoint, k);
 
-        bruteForceResult.resize(k);
+    // Obtener k-NN usando fuerza bruta
+    std::vector<std::shared_ptr<Particle>> knnBruteForce = particles;
+    std::sort(knnBruteForce.begin(), knnBruteForce.end(), [&queryPoint](const std::shared_ptr<Particle>& a, const std::shared_ptr<Particle>& b) {
+        return queryPoint.distance(a->getPosition()) < queryPoint.distance(b->getPosition());
+    });
+    knnBruteForce.resize(k); // Seleccionar los primeros k vecinos más cercanos
 
-        std::sort(knnResult.begin(), knnResult.end());
-        std::sort(bruteForceResult.begin(), bruteForceResult.end());
-
-        if (knnResult != bruteForceResult) {
+    // Verificar si ambos resultados son equivalentes y en el mismo orden
+    if (knnTree.size() != knnBruteForce.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < k; ++i) {
+        if (knnTree[i] != knnBruteForce[i]) {
             return false;
         }
     }
 
     return true;
 }
-*/
+
+
 class QuadTreeTest : public ::testing::Test {
 protected:
     Rect boundary;
@@ -292,11 +294,10 @@ TEST_F(QuadTreeTest, ParticlesInCorrectLeaf) {
     EXPECT_TRUE(verifyParticlesInCorrectLeaf(tree.getRoot().get()));
 }
 
-/*
 TEST_F(QuadTreeTest, KnnSearch) {
-    EXPECT_TRUE(verifyKnnSearch(tree, particles, boundary));
+    EXPECT_TRUE(verifyKNN(tree, particles, boundary));
 }
-*/
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
