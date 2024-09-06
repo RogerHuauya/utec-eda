@@ -53,3 +53,4 @@ NType minDistToRect(const Point2D &p, const Rect &rect) {
 
     return sqrt(dx * dx + dy * dy);
 }
+

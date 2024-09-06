@@ -20,6 +20,9 @@ add_executable(eda
         src/quadtree.cpp
         src/test.cpp
         Google_tests/quadtree/test.cpp
+        include/line.h
+        include/plane.h
+        include/bsptree.h
 )
 
 add_subdirectory(Google_tests)

@@ -191,3 +191,10 @@ Safe<T> max(const Safe<T> &a, const Safe<T> &b) {
 
 using NType = Safe<float>;
 
+enum RelationType {
+    COINCIDENT,
+    IN_FRONT,
+    BEHIND,
+    SPLIT
+};
+std::ostream &operator<<(std::ostream &os, const RelationType &type);

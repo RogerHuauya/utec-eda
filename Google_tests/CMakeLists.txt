@@ -6,7 +6,7 @@ add_subdirectory(lib/googletest)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 # 'Google_Tests_run' is the target name
-add_executable(Google_Tests_run
+add_executable(quadtree_test
         quadtree/test.cpp
 
         ../src/particle.cpp
@@ -15,4 +15,14 @@ add_executable(Google_Tests_run
         ../src/quadnode.cpp
         ../src/quadtree.cpp
 )
-target_link_libraries(Google_Tests_run gtest gtest_main)
+
+add_executable(bsptree_test
+        ../src/particle.cpp
+        ../src/point.cpp
+        ../src/rect.cpp
+        ../src/quadnode.cpp
+        ../src/quadtree.cpp
+        bsptree/test.cpp
+)
+target_link_libraries(quadtree_test gtest gtest_main)
+target_link_libraries(bsptree_test gtest gtest_main)
