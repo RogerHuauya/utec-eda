@@ -23,6 +23,8 @@ add_executable(eda
         include/line.h
         include/plane.h
         include/bsptree.h
+        src/plane.cpp
+        src/bsptree.cpp
 )
 
 add_subdirectory(Google_tests)

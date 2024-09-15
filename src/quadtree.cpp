@@ -2,6 +2,8 @@
 #include <cmath>
 #include <iostream>
 #include <set>
+#include <vector>
+#include <algorithm>
 #include "quadtree.h"
 
 size_t QuadTree::bucketSize = 6;

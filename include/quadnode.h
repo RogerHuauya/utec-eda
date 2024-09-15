@@ -6,7 +6,8 @@
 #include <iostream>
 #include <set>
 #include <random>
-#include <vector>
+#include <memory>
+#include <array>
 
 class QuadNode {
 private:

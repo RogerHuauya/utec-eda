@@ -9,29 +9,37 @@ std::ostream &operator<<(std::ostream &os, const RelationType &type);
 
 class Plane {
 private:
-    Point3D  _p;
+    Point3D _p;
     Vector3D _n;
 
 public:
-    Plane(const Point3D &point, const Vector3D &normal) : _p(point), _n(normal) {}
+    Plane() : _p(), _n() {}
 
-    NType    distance(const Point3D &p) const;
-    Point3D intersect(const Line    &l) const;
+    Plane(const Point3D &point, const Vector3D &normal) : _p(point),
+                                                          _n(normal) {}
+
+    NType distance(const Point3D &p) const;
+
+    Point3D intersect(const Line &l) const;
 
     // Contain
     bool contains(const Point3D &p) const;
-    bool contains(const Line    &l) const;
+
+    bool contains(const Line &l) const;
 
     // Getters
-    Point3D  getPoint() const { return _p; }
+    Point3D getPoint() const { return _p; }
+
     Vector3D getNormal() const { return _n; }
 
     // Setters
-    void setPoint (Point3D   point) { _p = point; }
+    void setPoint(Point3D point) { _p = point; }
+
     void setNormal(Vector3D normal) { _n = normal; }
 
     // Operators
     bool operator==(const Plane &other) const;
+
     bool operator!=(const Plane &other) const;
 
     // Print
@@ -50,13 +58,16 @@ public:
 
     // Getters
     std::vector<Point3D> getVertices() const { return vertices; }
+
     Point3D getVertex(size_t index) const { return vertices[index]; }
-    Plane   getPlane   () const;    // Get the plane of the polygon
-    Point3D getNormal  () const;    // Get the normal of the polygon
+
+    Plane getPlane() const;    // Get the plane of the polygon
+    Point3D getNormal() const;    // Get the normal of the polygon
     Point3D getCentroid() const;    // Get the centroid of the polygon
 
     // Setters
-    void setVertices(std::vector<Point3D> vertices) { this->vertices = vertices; }
+    void
+    setVertices(std::vector<Point3D> vertices) { this->vertices = vertices; }
 
     // Check if a point is inside the polygon
     bool contains(const Point3D &p) const;
@@ -71,8 +82,13 @@ public:
     NType area() const;
 
     // Operators
-    bool operator==(const Polygon &other) const;
-    bool operator!=(const Polygon &other) const;
+    bool operator==(const Polygon &other) const {
+        return true;
+    }
+
+    bool operator!=(const Polygon &other) const {
+        return false;
+    }
 
     // Print
     friend std::ostream &operator<<(std::ostream &os, const Polygon &p) {

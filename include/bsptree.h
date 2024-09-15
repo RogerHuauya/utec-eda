@@ -61,7 +61,7 @@ public:
 
     // Getters
     BSPNode *getRoot() const { return root; }
-    size_t   getRootPolygonsCount() const { return root ? root->polygons.size() : 0; }
+    size_t   getRootPolygonsCount() const { return root ? root->getPolygonsCount() : 0; }
 
     // Setters
     void setRoot(BSPNode *root) { this->root = root; }
@@ -73,9 +73,6 @@ public:
     const Polygon* detectCollision(const LineSegment& traceLine) const{
         return root ? root->detectCollision(traceLine) : nullptr;
     }
-
-    // Get number of polygons in the tree
-    size_t getRootPolygonsCount() const { return root ? root->polygons.size() : 0; }
 
     // Check if the tree is empty
     bool isEmpty() const { return root == nullptr; }

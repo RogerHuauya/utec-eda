@@ -23,6 +23,8 @@ add_executable(bsptree_test
         ../src/quadnode.cpp
         ../src/quadtree.cpp
         bsptree/test.cpp
+        ../src/plane.cpp
+        ../src/bsptree.cpp
 )
 target_link_libraries(quadtree_test gtest gtest_main)
 target_link_libraries(bsptree_test gtest gtest_main)
