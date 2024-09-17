@@ -7,6 +7,8 @@
 
 std::ostream &operator<<(std::ostream &os, const RelationType &type);
 
+class Polygon;
+
 class Plane {
 private:
     Point3D _p;
@@ -47,6 +49,15 @@ public:
         os << "Punto: " << p._p << ", Normal: " << p._n;
         return os;
     }
+
+    NType signedDistanceToPoint(const Point3D &point) const;
+
+    RelationType relationWithPlane(const Polygon &polygon) const;
+
+    bool isFront(const Polygon &polygon) const;
+
+    bool isBack(const Polygon &polygon) const;
+
 };
 
 class Polygon {
@@ -54,15 +65,17 @@ private:
     std::vector<Point3D> vertices;
 
 public:
+    Polygon() : vertices() {}
+
     Polygon(const std::vector<Point3D> &vertices) : vertices(vertices) {}
 
     // Getters
-    std::vector<Point3D> getVertices() const { return vertices; }
+    const std::vector<Point3D> &getVertices() const { return vertices; }
 
     Point3D getVertex(size_t index) const { return vertices[index]; }
 
     Plane getPlane() const;    // Get the plane of the polygon
-    Point3D getNormal() const;    // Get the normal of the polygon
+    Vector3D getNormal() const;    // Get the normal of the polygon
     Point3D getCentroid() const;    // Get the centroid of the polygon
 
     // Setters

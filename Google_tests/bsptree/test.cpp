@@ -9,12 +9,13 @@
 #include "plane.h"
 #include "bsptree.h"
 
+
 std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<float> dis(0.0f, 1.0f);
 
 // Helper functions for generating random polygons
-NType randomInRange(NType min, NType max) {
+NType randomInRange(float min, float max) {
     return min + (max - min) * dis(gen);
 }
 
@@ -27,8 +28,8 @@ Vector3D randomUnitVector() {
     return Vector3D(x, y, z);
 }
 
-Point3D randomPointInBox(NType x_min, NType x_max, NType y_min, NType y_max,
-                         NType z_min, NType z_max) {
+Point3D randomPointInBox(float x_min, float x_max, float y_min, float y_max,
+                         float z_min, float z_max) {
     NType x = randomInRange(x_min, x_max);
     NType y = randomInRange(y_min, y_max);
     NType z = randomInRange(z_min, z_max);
@@ -47,32 +48,41 @@ std::pair<Vector3D, Vector3D> generateOrthogonalVectors(const Vector3D &v) {
 }
 
 std::vector<Polygon>
-generateRandomPolygons(int n, NType x_min, NType x_max, NType y_min,
-                       NType y_max, NType z_min, NType z_max) {
+generateRandomPolygons(int n, float x_min, float x_max, float y_min,
+                       float y_max, float z_min, float z_max) {
     std::vector<Polygon> polygons;
+    std::uniform_int_distribution<int> vertexCountDist(3, 6);
+    std::uniform_real_distribution<float> angleDist(0, 2 * M_PI);
+    std::uniform_real_distribution<float> radiusDist(0.5, 1.5);
 
     for (int i = 0; i < n; ++i) {
         Point3D P = randomPointInBox(x_min, x_max, y_min, y_max, z_min, z_max);
         Vector3D v = randomUnitVector();
+        v.normalize();
+
         auto [u, w] = generateOrthogonalVectors(v);
+        int numVertices = vertexCountDist(gen);
 
-        Plane plane(P, v);
         std::vector<Point3D> vertices;
-        vertices.push_back(P);
+        NType angleIncrement = 2 * M_PI / numVertices;
+        for (int j = 0; j < numVertices; ++j) {
+            NType angle =
+                    j * angleIncrement + angleDist(gen) * (angleIncrement / 4);
+            NType radius = radiusDist(gen);
 
-        int numExtraPoints = 2; // Adjusted to match the test case
-        for (int j = 0; j < numExtraPoints; ++j) {
-            NType scale_u = randomInRange(-2.0, 2.0);
-            NType scale_w = randomInRange(-2.0, 2.0);
-            Point3D extraPoint = P + u * scale_u + w * scale_w;
-            if (std::find(vertices.begin(), vertices.end(), extraPoint) ==
-                vertices.end()) {
-                vertices.push_back(extraPoint);
-            }
+            NType scale_u = radius * cos(angle);
+            NType scale_w = radius * sin(angle);
+
+            Point3D vertex = P + u * scale_u + w * scale_w;
+            vertices.push_back(vertex);
         }
 
-        Polygon polygon(vertices);
-        polygons.push_back(polygon);
+        if (vertices.size() >= 3) {
+            Polygon polygon(vertices);
+            polygons.push_back(polygon);
+        } else {
+            --i;
+        }
     }
     return polygons;
 }
@@ -150,11 +160,7 @@ bool arePlanesEqual(const Plane &plane1, const Plane &plane2) {
     Vector3D pointDifference = pointInPlane1 - pointInPlane2;
 
     NType dotProduct = normal2.dotProduct(pointDifference);
-    if (abs(dotProduct) == NType(0)) {
-        return true;
-    }
-
-    return false;
+    return (abs(dotProduct) == NType(0));
 }
 
 bool
@@ -194,7 +200,7 @@ protected:
 
     void SetUp() override {
         int n_polygons = 200;
-        int p_min = 0, p_max = 500;
+        float p_min = 0, p_max = 500;
         randomPolygons = generateRandomPolygons(n_polygons, p_min, p_max,
                                                 p_min, p_max, p_min, p_max);
         for (const auto &polygon: randomPolygons) {
