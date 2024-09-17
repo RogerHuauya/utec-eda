@@ -19,7 +19,28 @@ bool Plane::contains(const Point3D &p) const {
     return false;
 }
 
+bool Plane::operator==(const Plane &other) const {
+    Vector3D normal1 = _n.unit();
+    Vector3D normal2 = other._n.unit();
+
+    Vector3D crossProduct = normal1.crossProduct(normal2);
+    if (crossProduct.mag() > 0) {
+        return false;
+    }
+
+    NType dotProduct = normal1.dotProduct(other._p - _p);
+    if (abs(dotProduct) == 0) {
+        return true;
+    }
+    return false;
+}
+
+
 RelationType Plane::relationWithPlane(const Polygon &polygon) const {
+    if (*this == polygon.getPlane()) {
+        return COINCIDENT;
+    }
+
     bool front = false, back = false;
     for (const Point3D &vertex: polygon.getVertices()) {
         NType distance = this->distance(vertex);
@@ -49,17 +70,6 @@ NType Plane::signedDistanceToPoint(const Point3D &point) const {
 
     return vectorToPoint.dotProduct(_n);
 }
-
-
-bool Plane::operator==(const Plane &other) const {
-    return ((_n == other._n && contains(other._p) ||
-             (_n == -other._n && contains(other._p))));
-}
-
-bool Plane::operator!=(const Plane &other) const {
-    return !(*this == other);
-}
-
 
 RelationType Polygon::relationWithPlane(const Plane &plane) const {
     bool front = false, back = false;
@@ -132,7 +142,7 @@ Point3D Polygon::getCentroid() const {
     for (const Point3D &vertex: vertices) {
         centroid = centroid + vertex;
     }
-    return (1.0 / vertices.size()) * centroid;
+    return NType(1.0 / vertices.size()) * centroid;
 }
 
 Vector3D Polygon::getNormal() const {

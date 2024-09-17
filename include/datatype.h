@@ -349,7 +349,7 @@ Safe<T> pow(const Safe<T> &base, const T &exponent) {
 }
 
 // Typedefs
-using NType = Safe<float>;
+using NType = Safe<long double>;
 
 // Relation type
 enum RelationType {
@@ -359,24 +359,4 @@ enum RelationType {
     SPLIT
 };
 
-// Overload operator<< for RelationType
-inline std::ostream &operator<<(std::ostream &os, const RelationType &type) {
-    switch (type) {
-        case COINCIDENT:
-            os << "COINCIDENT";
-            break;
-        case IN_FRONT:
-            os << "IN_FRONT";
-            break;
-        case BEHIND:
-            os << "BEHIND";
-            break;
-        case SPLIT:
-            os << "SPLIT";
-            break;
-        default:
-            os << "UNKNOWN";
-            break;
-    }
-    return os;
-}
+std::ostream &operator<<(std::ostream &os, const RelationType &type);

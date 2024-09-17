@@ -14,6 +14,7 @@ add_executable(quadtree_test
         ../src/rect.cpp
         ../src/quadnode.cpp
         ../src/quadtree.cpp
+        ../src/datatype.cpp
 )
 
 add_executable(bsptree_test
@@ -25,6 +26,7 @@ add_executable(bsptree_test
         bsptree/test.cpp
         ../src/plane.cpp
         ../src/bsptree.cpp
+        ../src/datatype.cpp
 )
 target_link_libraries(quadtree_test gtest gtest_main)
 target_link_libraries(bsptree_test gtest gtest_main)

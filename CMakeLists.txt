@@ -25,6 +25,20 @@ add_executable(eda
         include/bsptree.h
         src/plane.cpp
         src/bsptree.cpp
+        src/datatype.cpp
+        src/datatype.cpp
+)
+
+add_executable(bsptree_prof_test
+        src/particle.cpp
+        src/point.cpp
+        src/rect.cpp
+        src/quadnode.cpp
+        src/quadtree.cpp
+        src/plane.cpp
+        src/bsptree.cpp
+        src/datatype.cpp
+        test/main.cpp
 )
 
 add_subdirectory(Google_tests)

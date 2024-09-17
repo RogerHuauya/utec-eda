@@ -1,6 +1,5 @@
 #include "bsptree.h"
 #include <algorithm>
-#include <limits>
 
 void BSPNode::insert(const Polygon &polygon) {
     RelationType relation = partition.relationWithPlane(polygon);
@@ -32,7 +31,6 @@ void BSPNode::insert(const Polygon &polygon) {
                 front->insert(polygon);
             } else {
                 front = new BSPNode(partition);
-                front->polygons.push_back(polygon);
             }
             break;
 
@@ -41,7 +39,6 @@ void BSPNode::insert(const Polygon &polygon) {
                 back->insert(polygon);
             } else {
                 back = new BSPNode(partition);
-                back->polygons.push_back(polygon);
             }
             break;
     }

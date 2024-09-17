@@ -11,8 +11,9 @@ class BSPNode {
     std::vector<Polygon> polygons;
 
 public:
-    BSPNode(const Plane &partition) : partition(partition), front(nullptr),
-                                      back(nullptr) {}
+    explicit BSPNode(const Plane &partition) : partition(partition),
+                                               front(nullptr),
+                                               back(nullptr) {}
 
     ~BSPNode() {
         delete front;
