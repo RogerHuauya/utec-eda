@@ -26,7 +26,6 @@ add_executable(eda
         src/plane.cpp
         src/bsptree.cpp
         src/datatype.cpp
-        src/datatype.cpp
 )
 
 add_executable(bsptree_prof_test
@@ -42,9 +41,9 @@ add_executable(bsptree_prof_test
 )
 
 add_executable(sstree_prof_test
-        src/particle.cpp
         src/point.cpp
         src/sstree.cpp
+        src/rect.cpp
         src/datatype.cpp
         test/sstree_test.cpp
 )

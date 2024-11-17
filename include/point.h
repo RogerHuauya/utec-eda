@@ -156,6 +156,10 @@ public:
 
     float distance(const Point &other) const { return (*this - other).norm(); }
 
+    static float distance(const Point &a, const Point &b) {
+      return a.distance(b);
+    }
+
     float distanceSquared(const Point &other) const {
       return (*this - other).normSquared();
     }
