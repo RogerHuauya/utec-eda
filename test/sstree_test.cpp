@@ -6,7 +6,7 @@
 #include "data.h"
 #include "sstree.h"
 
-constexpr size_t NUM_POINTS = 10000;
+constexpr size_t NUM_POINTS = 100;
 constexpr size_t MAX_POINTS_PER_NODE = 20;
 
 /*

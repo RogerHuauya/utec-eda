@@ -152,6 +152,8 @@ public:
     // Métodos adicionales
     float norm() const { return coordinates_.norm(); }
 
+    std::size_t dim() const { return coordinates_.size(); }
+
     float normSquared() const { return coordinates_.squaredNorm(); }
 
     float distance(const Point &other) const { return (*this - other).norm(); }

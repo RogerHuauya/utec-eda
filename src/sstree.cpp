@@ -2,131 +2,281 @@
 
 /**
  * intersectsPoint
- * Verifica si un punto está dentro de la esfera delimitadora del nodo.
- * @param point: Punto a verificar.
- * @return bool: Retorna true si el punto está dentro de la esfera, de lo contrario false.
+ * Verifies if a point lies inside the bounding sphere of the node.
+ * @param point: The point to check.
+ * @return bool: Returns true if the point is within the sphere, false otherwise.
  */
 bool SSNode::intersectsPoint(const Point &point) const {
-  return point.distance(centroid) <= radius;
+  return (centroid - point).norm() <= radius;
 }
 
 /**
  * findClosestChild
- * Encuentra el hijo más cercano a un punto dado.
- * @param target: El punto objetivo para encontrar el hijo más cercano.
- * @return SSNode*: Retorna un puntero al hijo más cercano.
+ * Finds the closest child to a given point.
+ * @param target: The target point to find the nearest child.
+ * @return SSNode*: Returns a pointer to the closest child.
  */
 SSNode *SSNode::findClosestChild(const Point &target) {
-  return nullptr;
+  if (children.empty()) {
+    return nullptr; // Early exit if there are no children
+  }
+
+  SSNode *closestChild = nullptr;
+  float minDistance = std::numeric_limits<float>::max();
+
+  for (SSNode *child: children) {
+    float dist = (child->centroid - target).norm();
+    if (dist < minDistance) {
+      minDistance = dist;
+      closestChild = child;
+    }
+  }
+
+  return closestChild;
 }
 
 /**
  * updateBoundingEnvelope
- * Actualiza el centroide y el radio del nodo basándose en los nodos internos o datos.
+ * Updates the centroid and radius of the node based on internal nodes or data points.
  */
 void SSNode::updateBoundingEnvelope() {
+  if (_data.empty() && children.empty()) return;
+
+  std::vector<Point> centroids = getEntriesCentroids();
+  Point mean(Eigen::VectorXf::Zero(
+          (Eigen::Index)centroids[0].dim())); // Correctly initialize with a zero vector
+  for (const Point &_centroid: centroids) {
+    mean += _centroid;
+  }
+  mean /= (float) centroids.size();
+
+  float maxRadius = 0.0f;
+  for (const Point &_centroid: centroids) {
+    float distance = (mean - _centroid).norm();
+    if (distance > maxRadius) {
+      maxRadius = distance;
+    }
+  }
+
+  centroid = mean;
+  radius = maxRadius;
 }
 
 /**
  * directionOfMaxVariance
- * Calcula y retorna el índice de la dirección de máxima varianza.
- * @return size_t: Índice de la dirección de máxima varianza.
+ * Computes and returns the index of the direction with the maximum variance.
+ * @return size_t: Index of the direction with the maximum variance.
  */
 size_t SSNode::directionOfMaxVariance() {
-  return 0;
+  std::vector<Point> centroids = getEntriesCentroids();
+  size_t maxDirection = 0;
+  float maxVariance = 0.0f;
+
+  for (size_t i = 0; i < centroids.size(); ++i) {
+    float mean = 0.0f;
+    for (const Point &p: centroids) {
+      mean += p[i];
+    }
+    mean /= centroids.size();
+
+    float variance = 0.0f;
+    for (const Point &p: centroids) {
+      variance += (p[i] - mean) * (p[i] - mean);
+    }
+    variance /= centroids.size();
+
+    if (variance > maxVariance) {
+      maxVariance = variance;
+      maxDirection = i;
+    }
+  }
+
+  return maxDirection;
 }
 
 /**
  * split
- * Divide el nodo y retorna el nuevo nodo creado.
- * Implementación similar a R-tree.
- * @return SSNode*: Puntero al nuevo nodo creado por la división.
+ * Splits the node and returns the new node created.
+ * Similar to R-tree implementation.
+ * @return SSNode*: Pointer to the new node created by the split.
  */
 SSNode *SSNode::split() {
-  return nullptr;
+  size_t splitIndex = findSplitIndex(directionOfMaxVariance());
+
+  SSNode *newNode = new SSNode(centroid, radius, isLeaf, parent);
+  newNode->_data = std::vector<Data *>(_data.begin() + splitIndex,
+                                       _data.end());
+  _data.erase(_data.begin() + splitIndex, _data.end());
+
+  updateBoundingEnvelope();
+  newNode->updateBoundingEnvelope();
+
+  return newNode;
 }
 
 /**
  * findSplitIndex
- * Encuentra el índice de división en una coordenada específica.
- * @param coordinateIndex: Índice de la coordenada para encontrar el índice de división.
- * @return size_t: Índice de la división.
+ * Finds the split index along a specific coordinate.
+ * @param coordinateIndex: The index of the coordinate for the split.
+ * @return size_t: The split index.
  */
 size_t SSNode::findSplitIndex(size_t coordinateIndex) {
-  return 0;
+  std::sort(_data.begin(), _data.end(), [&](Data *a, Data *b) {
+      return a->getEmbedding()[coordinateIndex] <
+             b->getEmbedding()[coordinateIndex];
+  });
+
+  return _data.size() / 2;
 }
 
 /**
  * getEntriesCentroids
- * Devuelve los centroides de las entradas.
- * Estos centroides pueden ser puntos almacenados en las hojas o los centroides de los nodos hijos en los nodos internos.
- * @return std::vector<Point>: Vector de centroides de las entradas.
+ * Returns the centroids of the entries.
+ * These centroids can be points stored in leaves or centroids of child nodes in internal nodes.
+ * @return std::vector<Point>: Vector of entry centroids.
  */
 std::vector<Point> SSNode::getEntriesCentroids() {
-  return std::vector<Point>();
+  std::vector<Point> centroids;
+  if (isLeaf) {
+    for (Data *d: _data) {
+      centroids.push_back(d->getEmbedding());
+    }
+  } else {
+    for (SSNode *child: children) {
+      centroids.push_back(child->centroid);
+    }
+  }
+  return centroids;
 }
-
 
 /**
  * minVarianceSplit
- * Encuentra el índice de división óptimo para una lista de valores, de tal manera que la suma de las varianzas de las dos particiones resultantes sea mínima.
- * @param values: Vector de valores para encontrar el índice de mínima varianza.
- * @return size_t: Índice de mínima varianza.
+ * Finds the optimal split index to minimize the sum of variances of the two partitions.
+ * @param values: Vector of values to find the minimal variance split.
+ * @return size_t: Index of the minimal variance split.
  */
 size_t SSNode::minVarianceSplit(const std::vector<float> &values) {
-  return 0;
+  size_t minIndex = 0;
+  float minVarianceSum = std::numeric_limits<float>::max();
+
+  for (size_t i = 1; i < values.size() - 1; ++i) {
+    float leftMean =
+            std::accumulate(values.begin(), values.begin() + i, 0.0f) / i;
+    float rightMean = std::accumulate(values.begin() + i, values.end(), 0.0f) /
+                      (values.size() - i);
+
+    float leftVariance = 0.0f, rightVariance = 0.0f;
+    for (size_t j = 0; j < i; ++j) {
+      leftVariance += (values[j] - leftMean) * (values[j] - leftMean);
+    }
+    for (size_t j = i; j < values.size(); ++j) {
+      rightVariance += (values[j] - rightMean) * (values[j] - rightMean);
+    }
+
+    float varianceSum = leftVariance + rightVariance;
+    if (varianceSum < minVarianceSum) {
+      minVarianceSum = varianceSum;
+      minIndex = i;
+    }
+  }
+
+  return minIndex;
 }
 
 /**
  * searchParentLeaf
- * Busca el nodo hoja adecuado para insertar un punto.
- * @param node: Nodo desde el cual comenzar la búsqueda.
- * @param target: Punto objetivo para la búsqueda.
- * @return SSNode*: Nodo hoja adecuado para la inserción.
+ * Finds the appropriate leaf node for inserting a point.
+ * @param node: Node to start the search from.
+ * @param target: Target point for the search.
+ * @return SSNode*: Suitable leaf node for insertion.
  */
 SSNode *SSNode::searchParentLeaf(SSNode *node, const Point &target) {
-  return nullptr;
+  while (!node->isLeaf) {
+    node = node->findClosestChild(target);
+  }
+  return node;
 }
 
 /**
  * insert
- * Inserta un dato en el nodo, dividiéndolo si es necesario.
- * @param node: Nodo donde se realizará la inserción.
- * @param _data: Dato a insertar.
- * @return SSNode*: Nuevo nodo raíz si se dividió, de lo contrario nullptr.
+ * Inserts data into the node, splitting if necessary.
+ * @param node: Node to insert data into.
+ * @param _data: Data to be inserted.
+ * @return SSNode*: New root node if a split occurred, otherwise nullptr.
  */
 SSNode *SSNode::insert(SSNode *node, Data *_data) {
+  if (node->isLeaf) {
+    node->_data.push_back(_data);
+    if (node->_data.size() > maxPointsPerNode) {
+      return node->split();
+    }
+    node->updateBoundingEnvelope();
+    return nullptr;
+  }
+
+  SSNode *leaf = searchParentLeaf(node, _data->getEmbedding());
+  SSNode *newNode = leaf->insert(leaf, _data);
+
+  if (newNode) {
+    node->children.push_back(newNode);
+    node->updateBoundingEnvelope();
+    if (node->children.size() > maxPointsPerNode) {
+      return node->split();
+    }
+  }
+
   return nullptr;
 }
-
 
 /**
  * search
- * Busca un dato específico en el árbol.
- * @param node: Nodo desde el cual comenzar la búsqueda.
- * @param _data: Dato a buscar.
- * @return SSNode*: Nodo que contiene el dato (o nullptr si no se encuentra).
+ * Searches for specific data in the tree.
+ * @param node: Node to start the search from.
+ * @param _data: Data to search for.
+ * @return SSNode*: Node containing the data (or nullptr if not found).
  */
 SSNode *SSNode::search(SSNode *node, Data *_data) {
-  return nullptr;
-}
+  if (node->isLeaf) {
+    for (Data *d: node->_data) {
+      if (d == _data) {
+        return node;
+      }
+    }
+    return nullptr;
+  }
 
+  SSNode *closestChild = node->findClosestChild(_data->getEmbedding());
+  return search(closestChild, _data);
+}
 
 /**
  * insert
- * Inserta un dato en el árbol.
- * @param _data: Dato a insertar.
+ * Inserts data into the tree.
+ * @param _data: Data to be inserted.
  */
 void SSTree::insert(Data *_data) {
-}
+  if (!root) {
+    root = new SSNode(_data->getEmbedding(), 0.0f, true);
+  }
 
+  SSNode *newRoot = root->insert(root, _data);
+  if (newRoot) {
+    // If the root splits, create a new internal root node
+    auto *newInternalRoot = new SSNode(root->getCentroid(), root->getRadius(),
+                                       false);
+    newInternalRoot->children.push_back(root);
+    newInternalRoot->children.push_back(newRoot);
+    newInternalRoot->updateBoundingEnvelope();
+    root = newInternalRoot; // Update the root to the new internal node
+  }
+}
 
 /**
  * search
- * Busca un dato específico en el árbol.
- * @param _data: Dato a buscar.
- * @return SSNode*: Nodo que contiene el dato (o nullptr si no se encuentra).
+ * Searches for specific data in the tree.
+ * @param _data: Data to search for.
+ * @return SSNode*: Node containing the data (or nullptr if not found).
  */
 SSNode *SSTree::search(Data *_data) {
-  return nullptr;
+  return root ? root->search(root, _data) : nullptr;
 }

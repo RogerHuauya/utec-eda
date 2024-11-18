@@ -14,14 +14,10 @@ private:
     float radius;
     bool isLeaf;
     SSNode *parent;
-    std::vector<SSNode *> children;
     std::vector<Data *> _data;
 
     // For searching
     SSNode *findClosestChild(const Point &target);
-
-    // For insertion
-    void updateBoundingEnvelope();
 
     size_t directionOfMaxVariance();
 
@@ -34,6 +30,8 @@ private:
     size_t minVarianceSplit(const std::vector<float> &values);
 
 public:
+    std::vector<SSNode *> children;
+
     SSNode(const Point &centroid, float radius = 0.0f, bool isLeaf = true,
            SSNode *parent = nullptr)
             : centroid(centroid), radius(radius), isLeaf(isLeaf),
@@ -62,6 +60,9 @@ public:
 
     // Search
     SSNode *search(SSNode *node, Data *_data);
+
+// For insertion
+    void updateBoundingEnvelope();
 };
 
 class SSTree {

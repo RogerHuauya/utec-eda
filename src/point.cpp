@@ -60,6 +60,8 @@ NType minDistToRect(const Point2D &p, const Rect &rect) {
 // Constructor
 Point::Point(const Eigen::VectorXf &coordinates) : coordinates_(coordinates) {
   if (coordinates.size() != DIM) {
+    std::cout << "Dimensionalidad incorrecta :c" << std::endl;
+    std::cout << coordinates.size() << std::endl;
     throw std::invalid_argument("Dimensionalidad incorrecta :c");
   }
 }

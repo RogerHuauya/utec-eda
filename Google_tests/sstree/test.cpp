@@ -1,10 +1,19 @@
 #include <gtest/gtest.h>
-#include <unordered_set>
 #include <vector>
-#include "sstree.h"
+#include <unordered_set>
+#include <random>
 #include "point.h"
 #include "data.h"
+#include "sstree.h"
 
+constexpr size_t NUM_POINTS = 100;
+constexpr size_t MAX_POINTS_PER_NODE = 20;
+
+/*
+ * Helper Functions
+ */
+
+// Generates random data points for testing
 std::vector<Data *> generateRandomData(size_t numPoints) {
   std::vector<Data *> data;
   for (size_t i = 0; i < numPoints; ++i) {
@@ -16,93 +25,163 @@ std::vector<Data *> generateRandomData(size_t numPoints) {
   return data;
 }
 
-// General template for testing tree properties
-template<typename Tree, typename Node, typename Predicate>
-bool checkTreeProperty(const Tree &tree, Predicate predicate) {
-  std::unordered_set<Node *> visited;
-  return predicate(tree.getRoot(), visited);
-}
-
-// Specific predicates for your tests
-bool
-allDataPresentPredicate(SSNode *node, std::unordered_set<Data *> &dataSet) {
+// Collects data from the tree using DFS
+void collectDataDFS(SSNode *node, std::unordered_set<Data *> &treeData) {
   if (node->getIsLeaf()) {
-    for (const auto &data: node->getData()) {
-      dataSet.erase(data);
+    for (const auto &d: node->getData()) {
+      treeData.insert(d);
     }
   } else {
     for (const auto &child: node->getChildren()) {
-      allDataPresentPredicate(child, dataSet);
+      collectDataDFS(child, treeData);
     }
   }
-  return dataSet.empty();
 }
 
-bool leavesAtSameLevelPredicate(SSNode *node, int level, int &leafLevel) {
+// Helper function to check if all leaves are at the same level
+bool leavesAtSameLevelDFS(SSNode *node, int level, int &leafLevel) {
   if (node->getIsLeaf()) {
     if (leafLevel == -1) leafLevel = level;
     return leafLevel == level;
   }
   for (const auto &child: node->getChildren()) {
-    if (!leavesAtSameLevelPredicate(child, level + 1, leafLevel)) return false;
+    if (!leavesAtSameLevelDFS(child, level + 1, leafLevel)) return false;
   }
   return true;
 }
 
-bool noNodeExceedsMaxChildrenPredicate(SSNode *node, size_t maxPointsPerNode) {
+// Helper function to check if no node exceeds the maximum number of children
+bool noNodeExceedsMaxChildrenDFS(SSNode *node, size_t maxPointsPerNode) {
   if (node->getChildren().size() > maxPointsPerNode) return false;
   for (const auto &child: node->getChildren()) {
-    if (!noNodeExceedsMaxChildrenPredicate(child, maxPointsPerNode))
+    if (!noNodeExceedsMaxChildrenDFS(child, maxPointsPerNode)) return false;
+  }
+  return true;
+}
+
+// Helper function to check if all points are inside the bounding sphere of their respective nodes
+bool sphereCoversAllPointsDFS(SSNode *node) {
+  if (!node->getIsLeaf()) return true;
+  const Point &centroid = node->getCentroid();
+  float radius = node->getRadius();
+  for (const auto &data: node->getData()) {
+    if (Point::distance(centroid, data->getEmbedding()) > radius) return false;
+  }
+  return true;
+}
+
+bool dfsSphereCoversAllPoints(SSNode *node) {
+  if (node->getIsLeaf()) {
+    return sphereCoversAllPointsDFS(node);
+  } else {
+    for (const auto &child: node->getChildren()) {
+      if (!dfsSphereCoversAllPoints(child)) return false;
+    }
+  }
+  return true;
+}
+
+// Runs a DFS to check if all points are covered by their node's bounding sphere
+bool sphereCoversAllPoints(SSNode *root) {
+  return dfsSphereCoversAllPoints(root);
+}
+
+// Helper function to check if all children are inside the bounding sphere of their parent node
+bool sphereCoversAllChildrenSpheresDFS(SSNode *node) {
+  if (node->getIsLeaf()) return true;
+  const Point &centroid = node->getCentroid();
+  float radius = node->getRadius();
+  for (const auto &child: node->getChildren()) {
+    const Point &childCentroid = child->getCentroid();
+    float childRadius = child->getRadius();
+    if (Point::distance(centroid, childCentroid) + childRadius > radius)
       return false;
   }
   return true;
 }
 
-// Test Fixture
+bool dfsSphereCoversAllChildrenSpheres(SSNode *node) {
+  if (!sphereCoversAllChildrenSpheresDFS(node)) return false;
+  for (const auto &child: node->getChildren()) {
+    if (!dfsSphereCoversAllChildrenSpheres(child)) return false;
+  }
+  return true;
+}
+
+
+// Runs a DFS to check if all children spheres are covered by their parent node's sphere
+bool sphereCoversAllChildrenSpheres(SSNode *root) {
+  return dfsSphereCoversAllChildrenSpheres(root);
+}
+
+
+/*
+ * Google Test Fixture
+ */
 class SSTreeTest : public ::testing::Test {
 protected:
-    SSTree tree;
+    SSTree tree{MAX_POINTS_PER_NODE};
     std::vector<Data *> data;
 
-    virtual void SetUp() {
-      constexpr size_t NUM_POINTS = 10000;
-      constexpr size_t MAX_POINTS_PER_NODE = 20;
+    void SetUp() override {
       data = generateRandomData(NUM_POINTS);
-      tree = SSTree(MAX_POINTS_PER_NODE);
-
       for (const auto &d: data) {
         tree.insert(d);
       }
     }
 
-    virtual void TearDown() {
+    void TearDown() override {
+      // Clean up allocated memory
       for (auto &d: data) {
         delete d;
       }
     }
 };
 
-// Google Test Cases
+/*
+ * Test Cases Using the Fixture
+ */
+
+// Test 1: Check if all data is present in the tree
 TEST_F(SSTreeTest, AllDataPresent) {
   std::unordered_set<Data *> dataSet(data.begin(), data.end());
-  bool result = allDataPresentPredicate(tree.getRoot(), dataSet);
-  ASSERT_TRUE(result) << "Error: Not all data is present in the tree.";
+  std::unordered_set<Data *> treeData;
+  collectDataDFS(tree.getRoot(), treeData);
+
+  for (const auto &d: dataSet) {
+    EXPECT_TRUE(treeData.find(d) != treeData.end());
+  }
+
+  for (const auto &d: treeData) {
+    EXPECT_TRUE(dataSet.find(d) != dataSet.end());
+  }
 }
 
+// Test 2: Check if all leaves are at the same level
 TEST_F(SSTreeTest, LeavesAtSameLevel) {
   int leafLevel = -1;
-  bool result = leavesAtSameLevelPredicate(tree.getRoot(), 0, leafLevel);
-  ASSERT_TRUE(result) << "Error: Leaves are not at the same level.";
+  EXPECT_TRUE(leavesAtSameLevelDFS(tree.getRoot(), 0, leafLevel));
 }
 
+// Test 3: Check if no node exceeds the maximum number of children
 TEST_F(SSTreeTest, NoNodeExceedsMaxChildren) {
-  constexpr size_t MAX_POINTS_PER_NODE = 20;
-  bool result = noNodeExceedsMaxChildrenPredicate(tree.getRoot(),
-                                                  MAX_POINTS_PER_NODE);
-  ASSERT_TRUE(
-          result) << "Error: Some nodes exceed the maximum number of children.";
+  EXPECT_TRUE(
+          noNodeExceedsMaxChildrenDFS(tree.getRoot(), MAX_POINTS_PER_NODE));
 }
 
+// Test 4: Check if all points are inside the bounding sphere of their respective nodes
+TEST_F(SSTreeTest, SphereCoversAllPoints) {
+  EXPECT_TRUE(sphereCoversAllPoints(tree.getRoot()));
+}
+
+// Test 5: Check if all children are inside the bounding sphere of their parent node
+TEST_F(SSTreeTest, SphereCoversAllChildrenSpheres) {
+  EXPECT_TRUE(sphereCoversAllChildrenSpheres(tree.getRoot()));
+}
+
+/*
+ * Main Function for Google Test
+ */
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
