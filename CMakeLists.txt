@@ -48,6 +48,8 @@ add_executable(sstree_prof_test
         test/sstree_test.cpp
 )
 
+target_link_libraries(eda PRIVATE Eigen3::Eigen)
+target_link_libraries(bsptree_prof_test PRIVATE Eigen3::Eigen)
 target_link_libraries(sstree_prof_test PRIVATE Eigen3::Eigen)
 
 add_subdirectory(Google_tests)

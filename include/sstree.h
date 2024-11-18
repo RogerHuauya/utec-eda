@@ -12,7 +12,6 @@ private:
     size_t maxPointsPerNode;
     Point centroid;
     float radius;
-    bool isLeaf;
     SSNode *parent;
     std::vector<Data *> _data;
 
@@ -21,7 +20,7 @@ private:
 
     size_t directionOfMaxVariance();
 
-    SSNode *split();
+    std::pair<SSNode *, SSNode *> split();
 
     size_t findSplitIndex(size_t coordinateIndex);
 
@@ -30,15 +29,19 @@ private:
     size_t minVarianceSplit(const std::vector<float> &values);
 
 public:
+    bool isLeaf;
+
     std::vector<SSNode *> children;
 
     SSNode(const Point &centroid, float radius = 0.0f, bool isLeaf = true,
-           SSNode *parent = nullptr)
+           SSNode *parent = nullptr, size_t maxPointsPerNode = 20)
             : centroid(centroid), radius(radius), isLeaf(isLeaf),
-              parent(parent) {}
+              parent(parent), maxPointsPerNode(maxPointsPerNode) {}
 
     // Checks if a point is inside the bounding sphere
     bool intersectsPoint(const Point &point) const;
+
+    float computeMeanForDimension(std::vector<Point> &centroids, size_t i);
 
     // Getters
     const Point &getCentroid() const { return centroid; }
@@ -56,12 +59,11 @@ public:
     // Insertion
     SSNode *searchParentLeaf(SSNode *node, const Point &target);
 
-    SSNode *insert(SSNode *node, Data *_data);
+    std::pair<SSNode *, SSNode *> insert(SSNode *node, Data *_data);
 
     // Search
     SSNode *search(SSNode *node, Data *_data);
 
-// For insertion
     void updateBoundingEnvelope();
 };
 

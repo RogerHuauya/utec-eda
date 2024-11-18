@@ -17,8 +17,9 @@ bool SSNode::intersectsPoint(const Point &point) const {
  * @return SSNode*: Returns a pointer to the closest child.
  */
 SSNode *SSNode::findClosestChild(const Point &target) {
-  if (children.empty()) {
-    return nullptr; // Early exit if there are no children
+  if (isLeaf) {
+    std::cout << "Error: findClosestChild called on a leaf node." << std::endl;
+    exit(0);
   }
 
   SSNode *closestChild = nullptr;
@@ -35,31 +36,38 @@ SSNode *SSNode::findClosestChild(const Point &target) {
   return closestChild;
 }
 
+float
+SSNode::computeMeanForDimension(std::vector<Point> &centroids, size_t i) {
+  float mean = 0.f;
+  for (auto &point: centroids) {
+    mean += point[i];
+  }
+  mean = mean / static_cast<float>(centroids.size());
+  return mean;
+}
+
 /**
  * updateBoundingEnvelope
  * Updates the centroid and radius of the node based on internal nodes or data points.
  */
 void SSNode::updateBoundingEnvelope() {
-  if (_data.empty() && children.empty()) return;
+  std::vector<Point> points = getEntriesCentroids();
+  for (size_t i = 0; i < DIM; i++)
+    this->centroid[i] = computeMeanForDimension(points, i);
 
-  std::vector<Point> centroids = getEntriesCentroids();
-  Point mean(Eigen::VectorXf::Zero(
-          (Eigen::Index)centroids[0].dim())); // Correctly initialize with a zero vector
-  for (const Point &_centroid: centroids) {
-    mean += _centroid;
-  }
-  mean /= (float) centroids.size();
-
-  float maxRadius = 0.0f;
-  for (const Point &_centroid: centroids) {
-    float distance = (mean - _centroid).norm();
-    if (distance > maxRadius) {
-      maxRadius = distance;
+  this->radius = 0.f;
+  if (isLeaf) {
+    for (auto &point: points) {
+      this->radius = std::max(this->radius, (point - centroid).norm());
+    }
+  } else {
+    for (auto &child: children) {
+      float dist = (child->centroid - centroid).norm() + child->radius;
+      if (dist > radius) {
+        radius = dist;
+      }
     }
   }
-
-  centroid = mean;
-  radius = maxRadius;
 }
 
 /**
@@ -100,19 +108,43 @@ size_t SSNode::directionOfMaxVariance() {
  * Similar to R-tree implementation.
  * @return SSNode*: Pointer to the new node created by the split.
  */
-SSNode *SSNode::split() {
+std::pair<SSNode *, SSNode *> SSNode::split() {
   size_t splitIndex = findSplitIndex(directionOfMaxVariance());
 
-  SSNode *newNode = new SSNode(centroid, radius, isLeaf, parent);
-  newNode->_data = std::vector<Data *>(_data.begin() + splitIndex,
-                                       _data.end());
-  _data.erase(_data.begin() + splitIndex, _data.end());
+  SSNode *newNode1;
+  SSNode *newNode2;
 
-  updateBoundingEnvelope();
-  newNode->updateBoundingEnvelope();
+  if (isLeaf) {
+    newNode1 = new SSNode(centroid, radius, true, parent);
+    newNode2 = new SSNode(centroid, radius, true, parent);
 
-  return newNode;
+    newNode1->_data = std::vector<Data *>(_data.begin(),
+                                          _data.begin() + splitIndex);
+    newNode2->_data = std::vector<Data *>(_data.begin() + splitIndex,
+                                          _data.end());
+  } else {
+    newNode1 = new SSNode(centroid, radius, false, parent);
+    newNode2 = new SSNode(centroid, radius, false, parent);
+
+    newNode1->children = std::vector<SSNode *>(children.begin(),
+                                               children.begin() + splitIndex);
+    newNode2->children = std::vector<SSNode *>(children.begin() + splitIndex,
+                                               children.end());
+
+    for (SSNode *child: newNode1->children) {
+      child->parent = newNode1;
+    }
+    for (SSNode *child: newNode2->children) {
+      child->parent = newNode2;
+    }
+  }
+
+  newNode1->updateBoundingEnvelope();
+  newNode2->updateBoundingEnvelope();
+
+  return {newNode1, newNode2};
 }
+
 
 /**
  * findSplitIndex
@@ -139,11 +171,11 @@ std::vector<Point> SSNode::getEntriesCentroids() {
   std::vector<Point> centroids;
   if (isLeaf) {
     for (Data *d: _data) {
-      centroids.push_back(d->getEmbedding());
+      centroids.emplace_back(d->getEmbedding());
     }
   } else {
     for (SSNode *child: children) {
-      centroids.push_back(child->centroid);
+      centroids.emplace_back(child->centroid);
     }
   }
   return centroids;
@@ -204,28 +236,37 @@ SSNode *SSNode::searchParentLeaf(SSNode *node, const Point &target) {
  * @param _data: Data to be inserted.
  * @return SSNode*: New root node if a split occurred, otherwise nullptr.
  */
-SSNode *SSNode::insert(SSNode *node, Data *_data) {
+std::pair<SSNode *, SSNode *> SSNode::insert(SSNode *node, Data *_data) {
   if (node->isLeaf) {
+    if (std::find(node->_data.begin(), node->_data.end(), _data) !=
+        node->_data.end()) {
+      return {nullptr, nullptr};
+    }
+
     node->_data.push_back(_data);
-    if (node->_data.size() > maxPointsPerNode) {
-      return node->split();
-    }
     node->updateBoundingEnvelope();
-    return nullptr;
+    if (node->_data.size() <= maxPointsPerNode) {
+      return {nullptr, nullptr};
+    }
+    return node->split();
+  }
+  SSNode *closestChild = node->findClosestChild(_data->getEmbedding());
+  auto [newRoot1, newRoot2] = insert(closestChild, _data);
+  if (newRoot1 == nullptr) {
+    node->updateBoundingEnvelope();
+    return {nullptr, nullptr};
+  }
+  std::erase(node->children, closestChild);
+  node->children.push_back(newRoot1);
+  node->children.push_back(newRoot2);
+
+  node->updateBoundingEnvelope();
+
+  if (node->children.size() <= maxPointsPerNode) {
+    return {nullptr, nullptr};
   }
 
-  SSNode *leaf = searchParentLeaf(node, _data->getEmbedding());
-  SSNode *newNode = leaf->insert(leaf, _data);
-
-  if (newNode) {
-    node->children.push_back(newNode);
-    node->updateBoundingEnvelope();
-    if (node->children.size() > maxPointsPerNode) {
-      return node->split();
-    }
-  }
-
-  return nullptr;
+  return node->split();
 }
 
 /**
@@ -255,19 +296,15 @@ SSNode *SSNode::search(SSNode *node, Data *_data) {
  * @param _data: Data to be inserted.
  */
 void SSTree::insert(Data *_data) {
-  if (!root) {
-    root = new SSNode(_data->getEmbedding(), 0.0f, true);
+  if (root == nullptr) {
+    root = new SSNode(_data->getEmbedding(), 0.0f, true, nullptr);
   }
-
-  SSNode *newRoot = root->insert(root, _data);
-  if (newRoot) {
-    // If the root splits, create a new internal root node
-    auto *newInternalRoot = new SSNode(root->getCentroid(), root->getRadius(),
-                                       false);
-    newInternalRoot->children.push_back(root);
-    newInternalRoot->children.push_back(newRoot);
-    newInternalRoot->updateBoundingEnvelope();
-    root = newInternalRoot; // Update the root to the new internal node
+  auto [newRoot1, newRoot2] = root->insert(root, _data);
+  if (newRoot1 != nullptr) {
+    root = new SSNode(_data->getEmbedding(), 0.0f, false, nullptr);
+    root->children.push_back(newRoot1);
+    root->children.push_back(newRoot2);
+    root->isLeaf = false;
   }
 }
 
