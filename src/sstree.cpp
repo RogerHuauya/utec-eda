@@ -317,3 +317,51 @@ void SSTree::insert(Data *_data) {
 SSNode *SSTree::search(Data *_data) {
   return root ? root->search(root, _data) : nullptr;
 }
+
+void SSNode::knn(SSNode *&node, Point &query, size_t k,
+                 std::priority_queue<std::pair<float, Data *>> &max_heap) {
+  if (max_heap.size() == k) {
+    float maxDistance = max_heap.top().first;
+    float distanceToNode = Point::distance(query, node->getCentroid());
+
+    if (maxDistance + node->getRadius() < distanceToNode) {
+      return;
+    }
+  }
+
+  if (node->isLeaf) {
+    for (auto &entry: node->_data) {
+      float dist = Point::distance(query, entry->getEmbedding());
+
+      if (max_heap.size() < k) {
+        max_heap.emplace(dist, entry);
+      } else if (dist < max_heap.top().first) {
+        max_heap.pop();
+        max_heap.emplace(dist, entry);
+      }
+    }
+    return;
+  }
+
+  for (auto &child: node->children) {
+    child->knn(child, query, k, max_heap);
+  }
+}
+
+std::vector<Data *> SSTree::knn(Point &query, size_t k) {
+  std::priority_queue<std::pair<float, Data *>> max_heap;
+  if (root) {
+    root->knn(root, query, k, max_heap);
+  }
+
+  std::vector<Data *> result;
+  while (!max_heap.empty()) {
+    result.emplace_back(max_heap.top().second);
+    max_heap.pop();
+  }
+
+  // Reverse the vector to have the closest points in the correct order
+  std::reverse(result.begin(), result.end());
+
+  return result;
+}

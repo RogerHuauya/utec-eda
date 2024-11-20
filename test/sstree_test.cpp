@@ -6,7 +6,7 @@
 #include "data.h"
 #include "sstree.h"
 
-constexpr size_t NUM_POINTS = 100;
+constexpr size_t NUM_POINTS = 10000;
 constexpr size_t MAX_POINTS_PER_NODE = 20;
 
 /*
@@ -140,6 +140,24 @@ bool sphereCoversAllChildrenSpheres(SSNode *root) {
   return dfsSphereCoversAllChildrenSpheres(root);
 }
 
+bool correctKnnSearch(SSTree tree, std::vector<Data *> &data) {
+  Point query = Point::random();
+  size_t k = 1;
+  auto resultUsingTree = tree.knn(query, k);
+  std::sort(data.begin(), data.end(), [&query](Data *a, Data *b) {
+      return a->getEmbedding().distance(query) <
+             b->getEmbedding().distance(query);
+  });
+  data.resize(k);
+  for (size_t i = 0; i < data.size(); ++i) {
+    if (data[i] != resultUsingTree[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 int main() {
   auto data = generateRandomData(NUM_POINTS);
   SSTree tree(MAX_POINTS_PER_NODE);
@@ -154,6 +172,7 @@ int main() {
                                            MAX_POINTS_PER_NODE);
   bool spherePoints = sphereCoversAllPoints(tree.getRoot());
   bool sphereChildren = sphereCoversAllChildrenSpheres(tree.getRoot());
+  bool testKnn = correctKnnSearch(tree, data);
 
   std::cout << "Todos los datos presentes: " << (allPresent ? "Sí" : "No")
             << std::endl;
@@ -166,6 +185,7 @@ int main() {
   std::cout
           << "Hiper-esfera cubre todas las hiper-esferas internas de los nodos internos: "
           << (sphereChildren ? "Sí" : "No") << std::endl;
+  std::cout << "Hace búsqueda KNN: " << (testKnn ? "Sí" : "No") << std::endl;
   std::cout << "Happy ending! :D" << std::endl;
 
   return 0;

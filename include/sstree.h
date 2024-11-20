@@ -64,6 +64,9 @@ public:
     // Search
     SSNode *search(SSNode *node, Data *_data);
 
+    void knn(SSNode *&node, Point &query, size_t k,
+             std::priority_queue<std::pair<float, Data *>> &max_heap);
+
     void updateBoundingEnvelope();
 };
 
@@ -83,5 +86,7 @@ public:
     SSNode *search(Data *_data);
 
     SSNode *getRoot() const { return root; }
+
+    std::vector<Data *> knn(Point &query, size_t k);
 };
 
